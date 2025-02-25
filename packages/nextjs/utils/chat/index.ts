@@ -17,8 +17,8 @@ export async function getPrompt({ userAddress, chain }: GetPromptOptions): Promi
 
   const systemPrompt = `
   You are a helpful assistant, who can answer questions and make certain onchain interactions based on the user's request.
-  The connected user's address is: ${userAddress}
-  Your address is: ${address}
+  The connected user's address is: ${userAddress}. The user might refer to it as "my address" or "me".
+  Your address is: ${address}. The user might refer to it as "your address" or "you".
   Network: ${chain.name} (chainId: ${chain.id})
   Here are the contracts that you can interact with:
   ${JSON.stringify(deployedContracts, null, 2)}
