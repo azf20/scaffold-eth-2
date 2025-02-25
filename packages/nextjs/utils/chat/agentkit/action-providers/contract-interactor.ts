@@ -9,22 +9,8 @@ class ContractInteractor extends ActionProvider<WalletProvider> {
     private static readonly SCHEMA = z.object({
         contractName: z.string(),
         functionName: z.string().describe("The name of the function to call"),
-        functionArgs: z.array(z.string()).describe("The arguments to pass to the function"),
+        functionArgs: z.array(z.string().or(z.boolean())).describe("The arguments to pass to the function"),
         value: z.string().optional().describe("The value to send with the transaction, in wei"),
-    });
-
-    private static readonly BASE_RESULT = z.object({
-        contractName: z.string(),
-        functionName: z.string(),
-        error: z.string().optional(),
-    });
-
-    private static readonly READ_RESULT = ContractInteractor.BASE_RESULT.extend({
-        result: z.unknown(),
-    });
-
-    private static readonly WRITE_RESULT = ContractInteractor.BASE_RESULT.extend({
-        hash: z.string().optional(),
     });
 
     constructor(chainId: keyof typeof deployedContracts) {
@@ -32,40 +18,29 @@ class ContractInteractor extends ActionProvider<WalletProvider> {
         this.chainId = chainId;
     }
 
-    private createBaseResponse(args: z.infer<typeof ContractInteractor.SCHEMA>) {
-        return {
-            contractName: args.contractName,
-            functionName: args.functionName,
-        };
-    }
-
-    private createErrorResponse(args: z.infer<typeof ContractInteractor.SCHEMA>, error: string) {
-        return {
-            ...this.createBaseResponse(args),
-            error,
-        };
-    }
-
     private validateContract(args: z.infer<typeof ContractInteractor.SCHEMA>) {
         if (!Object.keys(deployedContracts[this.chainId]).includes(args.contractName)) {
-            return this.createErrorResponse(
-                args,
-                `Invalid contract name. Available: ${Object.keys(deployedContracts[this.chainId]).join(", ")}`
-            );
+            return {
+                ...args,
+                error: `Invalid contract name. Available: ${Object.keys(deployedContracts[this.chainId]).join(", ")}`
+            };
         }
         const contract = deployedContracts[this.chainId][args.contractName as keyof typeof deployedContracts[keyof typeof deployedContracts]];
         if (!contract) {
-            return this.createErrorResponse(args, "Contract not found");
+            return {
+                ...args,
+                error: "Contract not found"
+            };
         }
         return contract;
     }
 
     @CreateAction({
         name: "read-contract",
-        description: "Call a read-only function on a contract",
+        description: "Call a read-only function on a contract (where the mutabilityState is 'view' or 'pure').",
         schema: ContractInteractor.SCHEMA,
     })
-    async readContract(walletProvider: EvmWalletProvider, args: z.infer<typeof ContractInteractor.SCHEMA>): Promise<string> {
+    async readContract(walletProvider: EvmWalletProvider, args: z.infer<typeof ContractInteractor.SCHEMA>) {
         try {
             const contract = this.validateContract(args);
             if ('error' in contract) return contract.error;
@@ -77,15 +52,15 @@ class ContractInteractor extends ActionProvider<WalletProvider> {
                 args: args.functionArgs,
             });
 
-            return `Result of ${args.functionName} on ${args.contractName}: ${result}`;
+            return { ...args, result: String(result) };
         } catch (error) {
-            return `Error: ${String(error)}`;
+            return { ...args, error: String(error) };
         }
     }
 
     @CreateAction({
         name: "write-contract",
-        description: "Call a write function on a contract",
+        description: "Call a write function on a contract. Confirm with the user before sending.",
         schema: ContractInteractor.SCHEMA,
     })
     async writeContract(walletProvider: EvmWalletProvider, args: z.infer<typeof ContractInteractor.SCHEMA>) {
@@ -98,14 +73,14 @@ class ContractInteractor extends ActionProvider<WalletProvider> {
                 data: encodeFunctionData({
                     abi: contract.abi,
                     functionName: args.functionName as keyof typeof contract.abi.entries,
-                    args: [args.functionArgs],
+                    args: args.functionArgs,
                 }),
                 value: args.value ? BigInt(args.value) : undefined,
             });
 
-            return { ...this.createBaseResponse(args), hash };
+            return { ...args, hash };
         } catch (error) {
-            return this.createErrorResponse(args, String(error));
+            return { ...args, error: String(error) };
         }
     }
 
