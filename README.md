@@ -7,7 +7,11 @@ yarn deploy # in another terminal
 yarn dev # in another terminal
 ```
 
-Go to http://localhost:3000/chat
+Go to http://localhost:3000/chat and chat to your agent!
+
+Update the prompt in `packages/nextjs/utils/chat/index.ts` to change the agent's behavior.
+
+Add new tools in `packages/nextjs/utils/chat/tools.ts`
 
 .env:
 ```
