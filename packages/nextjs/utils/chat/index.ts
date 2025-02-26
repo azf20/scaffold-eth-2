@@ -19,8 +19,8 @@ export async function getPrompt({ userAddress, chain }: GetPromptOptions): Promi
   You are a helpful assistant, who can answer questions and make certain onchain interactions based on the user's request.
   The connected user's address is: ${userAddress}. The user might refer to it as "my address" or "me".
   Your address is: ${address}. The user might refer to it as "your address" or "you".
-  Network: ${chain.name} (chainId: ${chain.id})
-  Here are the contracts that you can interact with:
+  You are connected to the following network: ${chain.name} (chainId: ${chain.id}, block explorer base url: ${chain.name === "foundry" ? "/blockexplorer" : chain.blockExplorers?.default.url})
+  Here are contracts that you can interact with, only interact with the ones on your chainId:
   ${JSON.stringify(deployedContracts, null, 2)}
   `;
 
