@@ -35,6 +35,7 @@ class ContractInteractor extends ActionProvider<WalletProvider> {
         return contract;
     }
 
+    // prettier-ignore
     @CreateAction({
         name: "read-contract",
         description: "Call a read-only function on a contract (where the mutabilityState is 'view' or 'pure').",
@@ -58,6 +59,7 @@ class ContractInteractor extends ActionProvider<WalletProvider> {
         }
     }
 
+    // prettier-ignore
     @CreateAction({
         name: "write-contract",
         description: "Call a write function on a contract. Confirm with the user before sending.",
